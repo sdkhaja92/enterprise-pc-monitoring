@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="refresh" content="30"><title>Detection Center</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"></head>
+<body><header><div class="header-inner">
+<a class="back" href="{{ url_for('web.soc_center') }}"><- SOC Command Center</a>
+<div class="eyebrow">DETECTION ENGINE / CORRELATION</div>
+<div class="endpoint-head"><div><h1>Detection Center</h1><p>Rule-based defensive detections generated from endpoint telemetry.</p></div>
+<span class="security-badge">ANALYST VIEW</span></div></div></header>
+<main>
+<section class="soc-kpis">
+<article class="card soc-kpi"><span>OPEN DETECTIONS</span><strong>{{ summary.open }}</strong><small>Current detection queue</small></article>
+<article class="card soc-kpi"><span>HIGH</span><strong>{{ summary.high }}</strong><small>Priority review</small></article>
+<article class="card soc-kpi"><span>MEDIUM</span><strong>{{ summary.medium }}</strong><small>Analyst review</small></article>
+</section>
+<section class="card table-card">
+<div class="section-title"><div><div class="eyebrow dark">DETECTION QUEUE</div><h2>Correlated Security Signals</h2></div>
+<a class="ghost-link" href="{{ url_for('web.soc_center') }}">SOC -></a></div>
+<div class="detection-list">
+{% for d in detections %}
+<div class="detection-card det-{{ d.severity|lower }} {% if d.status == 'Closed' %}det-closed{% endif %}">
+<div class="det-head"><span class="incident-severity severity-{{ d.severity|lower }}">{{ d.severity }}</span><span class="rule">{{ d.rule_id }}</span><span class="mitre">{{ d.mitre_id or 'No ATT&CK mapping' }}</span><span class="det-status">{{ d.status }}</span></div>
+<h3>{{ d.title }}</h3>
+<div class="det-meta"><b>{{ d.pc_name }}</b><span>Count: {{ d.count }}</span><span>Last: {{ d.last_seen }}</span></div>
+<p>{{ d.evidence }}</p>
+</div>
+{% else %}<div class="empty">No detections yet. Keep the endpoint agents running to collect telemetry.</div>{% endfor %}
+</div>
+</section>
+<section class="card">
+<div class="section-title"><div><div class="eyebrow dark">HOW IT WORKS</div><h2>Detection Sources</h2></div></div>
+<div class="soc-nav-grid">
+<div class="soc-nav"><span>Authentication</span><b>Failed / privileged logon patterns</b></div>
+<div class="soc-nav"><span>Execution</span><b>Selected process observations</b></div>
+<div class="soc-nav"><span>Persistence</span><b>Windows service installation</b></div>
+<div class="soc-nav"><span>Threat Intel</span><b>IOC correlation matches</b></div>
+</div></section>
+</main></body></html>

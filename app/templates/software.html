@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{{ pc.pc_name }} — Software Inventory</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"></head>
+<body>
+<header><div class="header-inner">
+<a class="back" href="{{ url_for('web.endpoint_detail', pc_name=pc.pc_name) }}">← Endpoint Details</a>
+<div class="eyebrow">APPLICATION INVENTORY</div>
+<div class="endpoint-head"><div><h1>{{ pc.pc_name }}</h1><p>{{ pc.ip }} · {{ pc.department }}</p></div><span class="status-pill online">Inventory</span></div>
+</div></header>
+<main><section class="card table-card">
+<div class="section-title"><div><div class="eyebrow dark">SOFTWARE INVENTORY</div>
+<h2><span id="totalCount">{{ software|length }}</span> Installed Applications</h2></div>
+<input id="search" class="search-box" placeholder="Search software, publisher or version..." autocomplete="off"></div>
+<div class="table-wrap"><table id="softwareTable"><thead><tr>
+<th>Application</th><th>Version</th><th>Publisher</th><th>Install Date</th><th>Architecture</th>
+</tr></thead><tbody>
+{% for item in software %}<tr data-search="{{ (item.name ~ ' ' ~ item.version ~ ' ' ~ item.publisher ~ ' ' ~ item.install_date)|lower }}">
+<td><strong>{{ item.name }}</strong></td><td>{{ item.version or "—" }}</td><td>{{ item.publisher or "—" }}</td><td>{{ item.install_date or "—" }}</td><td>{{ item.architecture or "—" }}</td>
+</tr>{% else %}<tr><td colspan="5" class="empty">No software inventory received yet. Keep the endpoint agent running.</td></tr>{% endfor %}
+</tbody></table></div></section></main>
+<script>
+const input=document.getElementById("search"), rows=[...document.querySelectorAll("#softwareTable tbody tr[data-search]")];
+input.addEventListener("input",()=>{const q=input.value.toLowerCase().trim();let n=0;rows.forEach(r=>{const show=!q||r.dataset.search.includes(q);r.style.display=show?"":"none";if(show)n++});document.getElementById("totalCount").textContent=n});
+</script></body></html>

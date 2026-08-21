@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{{ incident.title }} - Incident</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head><body>
+<header><div class="header-inner">
+<a class="back" href="{{ url_for('web.incident_center') }}"><- Incident Queue</a>
+<div class="eyebrow">INCIDENT RESPONSE / CASE #{{ incident.id }}</div>
+<div class="endpoint-head">
+<div><h1>{{ incident.title }}</h1><p>{{ incident.pc_name }} · {{ incident.category }}</p></div>
+<div><span class="incident-severity severity-{{ incident.severity|lower }}">{{ incident.severity }}</span></div>
+</div>
+</div></header>
+<main>
+
+<section class="incident-hero card">
+<div><div class="eyebrow dark">CASE STATUS</div><span class="incident-status status-{{ incident.status|lower }}">{{ incident.status }}</span></div>
+<div><div class="eyebrow dark">ENDPOINT RISK</div><strong class="big-score">{{ incident.risk_score }}</strong><span class="muted"> / 100 · {{ incident.risk_level }}</span></div>
+<div><div class="eyebrow dark">CASE UPDATED</div><strong>{{ incident.updated_at }}</strong></div>
+</section>
+
+<section class="card">
+<div class="section-title"><div><div class="eyebrow dark">RESPONSE WORKFLOW</div><h2>Case Status</h2></div>{% if user and user.role in ["Admin","Operator"] %}<button class="ai-btn" id="incidentAI">AI Analyze Incident</button>{% endif %}</div>
+<form method="post" action="{{ url_for('web.update_incident_status', incident_id=incident.id) }}" class="status-form">
+<select name="status" class="filter-select">
+{% for st in ["Open","Investigating","Contained","Resolved"] %}
+<option value="{{ st }}" {% if incident.status == st %}selected{% endif %}>{{ st }}</option>
+{% endfor %}
+</select>
+<button class="primary-btn" type="submit">Update Status</button>
+</form>
+<p class="muted">{{ incident.summary }}</p>
+</section>
+
+<section class="card">
+<div class="section-title"><div><div class="eyebrow dark">INCIDENT TIMELINE</div><h2>Investigation Timeline</h2></div></div>
+<div class="timeline">
+{% for e in events %}
+<div class="timeline-item"><div class="timeline-dot"></div><div><strong>{{ e.title }}</strong><small>{{ e.event_time }} · {{ e.event_type }}</small><p>{{ e.detail }}</p></div></div>
+{% else %}
+<div class="empty">No timeline entries yet.</div>
+{% endfor %}
+</div>
+</section>
+
+<section class="card">
+<div class="section-title"><div><div class="eyebrow dark">RELATED SECURITY EVENTS</div><h2>Windows Event Evidence</h2></div></div>
+<div class="table-wrap"><table><thead><tr><th>EVENT</th><th>ACCOUNT</th><th>SOURCE IP</th><th>PROVIDER</th><th>TIME</th><th>MESSAGE</th></tr></thead><tbody>
+{% for e in security %}
+<tr><td><span class="event-id event-{{ e.event_id }}">{{ e.event_id }}</span></td><td>{{ e.account_name or "-" }}</td><td>{{ e.source_ip or "-" }}</td><td>{{ e.provider or "-" }}</td><td>{{ e.event_time }}</td><td class="event-message">{{ e.message }}</td></tr>
+{% else %}<tr><td colspan="6" class="empty">No security event evidence.</td></tr>{% endfor %}
+</tbody></table></div>
+</section>
+
+<section class="card">
+<div class="section-title"><div><div class="eyebrow dark">PROCESS EVIDENCE</div><h2>Top Endpoint Processes</h2></div></div>
+<div class="table-wrap"><table><thead><tr><th>PID</th><th>PROCESS</th><th>USER</th><th>CPU</th><th>MEMORY</th><th>STATUS</th></tr></thead><tbody>
+{% for p in processes %}
+<tr><td>{{ p.pid }}</td><td><b>{{ p.name }}</b></td><td>{{ p.username or "System" }}</td><td>{{ "%.1f"|format(p.cpu_percent) }}%</td><td>{{ "%.1f"|format(p.memory_mb) }} MB</td><td>{{ p.status }}</td></tr>
+{% else %}<tr><td colspan="6" class="empty">No process evidence.</td></tr>{% endfor %}
+</tbody></table></div>
+</section>
+
+<section class="card">
+<div class="section-title"><div><div class="eyebrow dark">NETWORK EVIDENCE</div><h2>Observed Remote Connections</h2></div></div>
+<div class="table-wrap"><table><thead><tr><th>PID</th><th>PROCESS</th><th>LOCAL</th><th>REMOTE</th><th>STATUS</th><th>TIME</th></tr></thead><tbody>
+{% for c in connections %}
+<tr><td>{{ c.pid }}</td><td>{{ c.process_name or "-" }}</td><td>{{ c.local_address }}:{{ c.local_port }}</td><td>{{ c.remote_address }}:{{ c.remote_port }}</td><td>{{ c.status }}</td><td>{{ c.collected_at }}</td></tr>
+{% else %}<tr><td colspan="6" class="empty">No network evidence.</td></tr>{% endfor %}
+</tbody></table></div>
+</section>
+
+<section class="card">
+<div class="section-title"><div><div class="eyebrow dark">INVESTIGATOR NOTES</div><h2>Case Notes</h2></div></div>
+<form method="post" action="{{ url_for('web.add_incident_note', incident_id=incident.id) }}">
+<textarea name="note" class="note-box" rows="4" placeholder="Record investigation findings, validation steps, containment actions or next steps..." required></textarea>
+<button class="primary-btn" type="submit">Add Investigation Note</button>
+</form>
+<div class="notes">
+{% for n in notes %}
+<div class="note-item"><b>{{ n.author or "Operator" }}</b><small>{{ n.created_at }}</small><p>{{ n.note }}</p></div>
+{% else %}<div class="empty">No investigation notes yet.</div>{% endfor %}
+</div>
+</section>
+
+<section class="card ai-analysis-card" id="aiIncidentPanel" hidden><div class="section-title"><div><div class="eyebrow dark">AI Sentinel</div><h2>Investigation Analysis</h2></div></div><div id="incidentAIOutput" class="ai-output">Analyzing...</div></section>
+
+<section class="card"><div class="section-title"><div><div class="eyebrow dark">AI HISTORY</div><h2>Previous Analyst Analyses</h2></div></div><div class="ai-analysis-history">{% for a in ai_history %}<article class="ai-analysis-item"><b>{{ a.provider }} · {{ a.model }}</b><small>{{ a.created_at }} · {{ a.created_by or 'operator' }}</small><pre>{{ a.analysis }}</pre></article>{% else %}<div class="empty">No AI analysis has been recorded for this incident yet.</div>{% endfor %}</div></section>
+</main><script>
+const incidentAI=document.getElementById('incidentAI'); if(incidentAI) incidentAI.addEventListener('click', async()=>{const panel=document.getElementById('aiIncidentPanel'),out=document.getElementById('incidentAIOutput');panel.hidden=false;out.textContent='Analyzing incident evidence with configured AI provider...';const r=await fetch('{{ url_for("web.ai_analyze_incident", incident_id=incident.id) }}',{method:'POST'});const d=await r.json();out.textContent=d.ok?d.analysis:(d.error||'AI analysis failed');});
+</script></body></html>

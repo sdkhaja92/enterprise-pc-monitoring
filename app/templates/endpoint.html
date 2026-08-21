@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{{ pc.pc_name }} — Endpoint Details</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<header>
+  <div class="header-inner">
+    <a class="back" href="{{ url_for('web.dashboard') }}">← Fleet Dashboard</a>
+    <div class="eyebrow">ENDPOINT DETAILS</div>
+    <div class="endpoint-head">
+      <div>
+        <h1>{{ pc.pc_name }}</h1>
+        <p>{{ pc.ip }} · {{ pc.department }}</p>
+      </div>
+      <span class="status-pill {{ 'online' if status == 'Online' else 'offline' }}">{{ status }}</span>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="stats">
+    <article class="card stat"><span>CPU</span><strong>{{ pc.cpu }}<small>%</small></strong></article>
+    <article class="card stat"><span>RAM</span><strong>{{ pc.ram }}<small>%</small></strong></article>
+    <article class="card stat"><span>Disk</span><strong class="{{ 'metric-warn-text' if pc.disk >= 80 else '' }}">{{ pc.disk }}<small>%</small></strong></article>
+    <article class="card stat"><span>Last Seen</span><strong class="small-value">{{ pc.last_seen or "-" }}</strong></article>
+  </section>
+
+  <section class="card chart-card">
+    <div class="section-title">
+      <div>
+        <div class="eyebrow dark">PERFORMANCE TELEMETRY</div>
+        <h2>Resource Utilization</h2>
+      </div>
+      <span class="live-dot">● Live data</span>
+    </div>
+    <div class="chart-wrap">
+      <canvas id="metricsChart"></canvas>
+    </div>
+  </section>
+
+  <section class="card hardware-card">
+    <div class="section-title compact">
+      <div>
+        <div class="eyebrow dark">ASSET INVENTORY</div>
+        <h2>Hardware & Operating System</h2>
+      </div>
+    </div>
+    <div class="hardware-grid">
+      <div><span>Operating System</span><b>{{ hardware.os_name or "Not reported" }}</b></div>
+      <div><span>OS Version</span><b>{{ hardware.os_version or "Not reported" }}</b></div>
+      <div><span>Architecture</span><b>{{ hardware.architecture or "Not reported" }}</b></div>
+      <div><span>Processor</span><b>{{ hardware.cpu_model or "Not reported" }}</b></div>
+      <div><span>CPU Cores</span><b>{{ hardware.cpu_cores or "Not reported" }}</b></div>
+      <div><span>Total RAM</span><b>{% if hardware.ram_total_gb %}{{ hardware.ram_total_gb }} GB{% else %}Not reported{% endif %}</b></div>
+      <div class="wide"><span>GPU / Display Adapter</span><b>{{ hardware.gpu_model or "Not reported" }}</b></div>
+    </div>
+  </section>
+
+  <section class="two-col">
+    <article class="card">
+      <div class="section-title compact"><h2>Endpoint Information</h2></div>
+      <div class="details">
+        <div><span>Hostname</span><b>{{ pc.pc_name }}</b></div>
+        <div><span>IP Address</span><b>{{ pc.ip }}</b></div>
+        <div><span>Department</span><b>{{ pc.department }}</b></div>
+        <div><span>Last Seen</span><b>{{ pc.last_seen or "-" }}</b></div>
+      </div>
+    </article>
+
+    <article class="card">
+      <div class="section-title compact"><h2>Recent Alerts</h2></div>
+      {% if alerts %}
+      <div class="alert-list">
+        {% for a in alerts %}
+        <div class="alert-item">
+          <div><span class="severity {{ a.severity|lower }}">{{ a.severity }}</span><b>{{ a.message }}</b></div>
+          <small>{{ a.created_at }}</small>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="empty">No alerts recorded for this endpoint.</div>
+      {% endif %}
+    </article>
+  </section>
+
+<section class="card software-preview"><div class="section-title compact"><div>
+<div class="eyebrow dark">APPLICATIONS</div><h2>Software Inventory</h2></div>
+<a class="ghost-link" href="{{ url_for('web.software_inventory', pc_name=pc.pc_name) }}">View all</a></div>
+<div class="software-mini"><div class="software-count"><strong id="softwareCount">—</strong><span>installed applications</span></div>
+<p>Windows installed-software inventory collected by the endpoint agent.</p></div></section>
+
+<section class="card">
+  <div class="section-title compact">
+    <div>
+      <div class="eyebrow dark">ENDPOINT OPERATIONS</div>
+      <h2>Processes & Services</h2>
+      <p class="muted">Latest process and Windows service inventory reported by the endpoint agent.</p>
+    </div>
+    <a class="ghost-link" href="{{ url_for('web.process_service_inventory', pc_name=pc.pc_name) }}">Open inventory →</a>
+  </div>
+</section>
+
+<section class="card">
+  <div class="section-title compact">
+    <div>
+      <div class="eyebrow dark">SECURITY OPERATIONS</div>
+      <h2>Windows Security Monitoring</h2>
+      <p class="muted">Event Log telemetry, authentication activity and endpoint security signals.</p>
+    </div>
+    <a class="ghost-link" href="{{ url_for('web.security_center') }}">Open Security Center -></a>
+  </div>
+</section>
+
+<section class="card">
+  <div class="section-title compact">
+    <div>
+      <div class="eyebrow dark">THREAT EXPOSURE</div>
+      <h2>Endpoint Risk Profile</h2>
+      <p class="muted">Risk score, Microsoft Defender status and current network connections.</p>
+    </div>
+    <a class="ghost-link" href="{{ url_for('web.endpoint_risk', pc_name=pc.pc_name) }}">Open Risk Profile -></a>
+  </div>
+</section>
+</main>
+
+<script>
+const initialMetrics = {{ metrics|tojson }};
+const canvas = document.getElementById("metricsChart");
+const ctx = canvas.getContext("2d");
+
+function drawChart(data) {
+  const rect = canvas.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = rect.width * dpr;
+  canvas.height = 320 * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  const W = rect.width, H = 320;
+  ctx.clearRect(0,0,W,H);
+
+  const pad = {l:48,r:20,t:25,b:38};
+  const cw = W-pad.l-pad.r, ch=H-pad.t-pad.b;
+
+  ctx.font = "11px system-ui";
+  ctx.fillStyle = "#7a889a";
+  ctx.strokeStyle = "#e6ecf2";
+  ctx.lineWidth = 1;
+
+  for(let i=0;i<=5;i++){
+    const y=pad.t+(ch*i/5);
+    ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(W-pad.r,y); ctx.stroke();
+    ctx.fillText(String(100-i*20)+"%",8,y+4);
+  }
+
+  const series = [
+    {key:"cpu", label:"CPU", dash:[]},
+    {key:"ram", label:"RAM", dash:[6,4]},
+    {key:"disk", label:"Disk", dash:[2,4]}
+  ];
+
+  series.forEach((s,si)=>{
+    ctx.beginPath();
+    data.forEach((p,i)=>{
+      const x=pad.l+(data.length<=1?0:i/(data.length-1))*cw;
+      const value=Math.max(0,Math.min(100,Number(p[s.key])||0));
+      const y=pad.t+(1-value/100)*ch;
+      if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+    });
+    ctx.setLineDash(s.dash);
+    ctx.strokeStyle=["#146ef5","#6b7280","#111827"][si];
+    ctx.lineWidth=2;
+    ctx.stroke();
+    ctx.setLineDash([]);
+  });
+
+  let lx=pad.l;
+  series.forEach((s,si)=>{
+    ctx.fillStyle=["#146ef5","#6b7280","#111827"][si];
+    ctx.fillRect(lx,H-22,18,2);
+    ctx.fillText(s.label,lx+24,H-18);
+    lx+=75;
+  });
+}
+
+drawChart(initialMetrics);
+window.addEventListener("resize",()=>drawChart(initialMetrics));
+fetch("{{ url_for('api.pc_software', pc_name=pc.pc_name) }}").then(r=>r.json()).then(x=>document.getElementById("softwareCount").textContent=x.length).catch(()=>{});
+</script>
+</body>
+</html>

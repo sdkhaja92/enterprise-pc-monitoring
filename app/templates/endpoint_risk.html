@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{{ pc.pc_name }} - Risk Profile</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<header><div class="header-inner">
+<a class="back" href="{{ url_for('web.endpoint_detail', pc_name=pc.pc_name) }}"><- Endpoint Details</a>
+<div class="eyebrow">ENDPOINT SECURITY / RISK PROFILE</div>
+<div class="endpoint-head"><div><h1>{{ pc.pc_name }}</h1><p>{{ pc.ip }} · {{ pc.department }}</p></div></div>
+</div></header>
+<main>
+<section class="risk-hero card">
+<div><div class="eyebrow dark">CURRENT RISK</div><div class="risk-number">{{ risk.score }}</div><div class="risk-caption">out of 100</div></div>
+<div><span class="risk-level risk-{{ risk.level|lower }}">{{ risk.level }}</span><h2>Endpoint Risk</h2><p>{{ risk.reasons }}</p></div>
+<div><div class="eyebrow dark">DEFENDER STATUS</div><strong>{{ risk.defender_status }}</strong><small>{{ risk.updated_at }}</small></div>
+</section>
+
+<section class="card">
+<div class="section-title"><div><div class="eyebrow dark">NETWORK TELEMETRY</div><h2>Current Remote Connections</h2><p class="muted">Connections observed by the endpoint agent. This is visibility data, not a verdict that a connection is malicious.</p></div></div>
+<div class="table-wrap"><table><thead><tr><th>PID</th><th>PROCESS</th><th>LOCAL</th><th>REMOTE</th><th>STATUS</th><th>TIME</th></tr></thead><tbody>
+{% for c in connections %}
+<tr><td>{{ c.pid }}</td><td><b>{{ c.process_name or "-" }}</b></td><td>{{ c.local_address }}:{{ c.local_port }}</td><td>{{ c.remote_address }}:{{ c.remote_port }}</td><td>{{ c.status }}</td><td>{{ c.collected_at }}</td></tr>
+{% else %}<tr><td colspan="6" class="empty">No remote network connections reported.</td></tr>{% endfor %}
+</tbody></table></div>
+</section>
+</main></body></html>

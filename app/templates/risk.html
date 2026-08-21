@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Endpoint Risk - Enterprise Monitoring</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<header><div class="header-inner">
+<a class="back" href="{{ url_for('web.dashboard') }}"><- Fleet Dashboard</a>
+<div class="eyebrow">SECURITY OPERATIONS / ENDPOINT RISK</div>
+<div class="endpoint-head"><div><h1>Endpoint Risk</h1><p>Risk scoring combines security events, active alerts and endpoint protection status.</p></div></div>
+</div></header>
+<main>
+<section class="stats">
+<article class="card stat"><span>CRITICAL</span><strong class="risk-critical">{{ summary.critical }}</strong></article>
+<article class="card stat"><span>HIGH</span><strong class="risk-high">{{ summary.high }}</strong></article>
+<article class="card stat"><span>MEDIUM</span><strong class="risk-medium">{{ summary.medium }}</strong></article>
+<article class="card stat"><span>LOW</span><strong>{{ summary.low }}</strong></article>
+</section>
+
+<section class="card table-card">
+<div class="section-title"><div><div class="eyebrow dark">FLEET RISK</div><h2>Endpoint Risk Profiles</h2></div><button class="ghost" onclick="location.reload()">Refresh</button></div>
+<div class="table-wrap"><table><thead><tr><th>ENDPOINT</th><th>SCORE</th><th>LEVEL</th><th>DEFENDER</th><th>REASONS</th><th>UPDATED</th></tr></thead><tbody>
+{% for r in rows %}
+<tr>
+<td><a class="endpoint-link" href="{{ url_for('web.endpoint_risk', pc_name=r.pc_name) }}">{{ r.pc_name }}</a><small>{{ r.ip }} · {{ r.department }}</small></td>
+<td><span class="risk-score risk-{{ r.level|lower }}">{{ r.score }}</span></td>
+<td><span class="risk-level risk-{{ r.level|lower }}">{{ r.level }}</span></td>
+<td>{{ r.defender_status }}</td><td class="event-message" title="{{ r.reasons }}">{{ r.reasons }}</td><td>{{ r.updated_at or "-" }}</td>
+</tr>
+{% else %}<tr><td colspan="6" class="empty">No endpoint risk data yet.</td></tr>{% endfor %}
+</tbody></table></div>
+</section>
+</main></body></html>

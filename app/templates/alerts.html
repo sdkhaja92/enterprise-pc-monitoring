@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Alert Center — Enterprise Monitoring</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head><body>
+<header><div class="header-inner">
+<a class="back" href="{{ url_for('web.dashboard') }}">← Fleet Dashboard</a>
+<div class="eyebrow">SECURITY / OPERATIONS</div>
+<h1>Alert Center</h1>
+<p>Review, filter and resolve endpoint health alerts.</p>
+</div></header>
+<main>
+<section class="stats alert-stats">
+<a class="card stat alert-filter active" data-filter="active" href="#"><span>Active</span><strong>{{ summary.active }}</strong></a>
+<a class="card stat alert-filter" data-filter="high" href="#"><span>High</span><strong>{{ summary.high }}</strong></a>
+<a class="card stat alert-filter" data-filter="warning" href="#"><span>Warning</span><strong>{{ summary.warning }}</strong></a>
+<a class="card stat alert-filter" data-filter="resolved" href="#"><span>Resolved</span><strong>{{ summary.resolved }}</strong></a>
+</section>
+
+<section class="card table-card alert-table-card">
+<div class="section-title">
+<div><div class="eyebrow dark">ALERT STREAM</div><h2>Endpoint Alerts</h2></div>
+<div class="alert-tools"><input id="search" class="search-box" placeholder="Search endpoint or alert..." autocomplete="off">
+<select id="state" class="filter-select"><option value="active">Active</option><option value="resolved">Resolved</option><option value="all">All</option></select></div>
+</div>
+<div class="table-wrap"><table id="alertsTable"><thead>
+<tr><th>Severity</th><th>Endpoint</th><th>Alert</th><th>Created</th><th>Status</th><th>Action</th></tr>
+</thead><tbody>
+{% for a in alerts %}
+<tr data-severity="{{ a.severity|lower }}" data-resolved="{{ a.resolved }}" data-search="{{ (a.pc_name ~ ' ' ~ a.message ~ ' ' ~ a.severity)|lower }}">
+<td><span class="severity {{ a.severity|lower }}">{{ a.severity }}</span></td>
+<td><a class="endpoint-link" href="{{ url_for('web.endpoint_detail', pc_name=a.pc_name) }}">{{ a.pc_name }}</a></td>
+<td><strong>{{ a.message }}</strong></td><td>{{ a.created_at }}</td>
+<td>{% if a.resolved %}<span class="resolved-label">Resolved</span>{% else %}<span class="status online">Active</span>{% endif %}</td>
+<td>{% if user and user.role in ["Admin","Operator"] %}<button class="ai-btn analyze-alert" data-id="{{ a.id }}">AI Analyze</button>{% endif %}{% if not a.resolved %}<button class="ticket-btn create-ticket" data-id="{{ a.id }}">Ticket</button> <button class="resolve-btn" data-id="{{ a.id }}">Resolve</button>{% endif %}</td>
+</tr>
+{% else %}<tr><td colspan="6" class="empty">No alerts recorded.</td></tr>{% endfor %}
+</tbody></table></div></section>
+</main>
+<div id="aiModal" class="ai-modal" hidden><div class="ai-modal-card"><div class="section-title"><div><div class="eyebrow dark">AI Sentinel</div><h2>Alert Analysis</h2></div><button class="ghost" id="closeAI">Close</button></div><div id="aiOutput" class="ai-output">Analyzing...</div></div></div>
+<script>
+
+const rows=[...document.querySelectorAll("#alertsTable tbody tr[data-search]")];
+const search=document.getElementById("search"), state=document.getElementById("state");
+function apply(){
+ const q=search.value.toLowerCase().trim(), st=state.value;
+ rows.forEach(row=>{
+   const resolved=row.dataset.resolved==="1";
+   const stateOK=st==="all"||(st==="resolved"&&resolved)||(st==="active"&&!resolved);
+   row.style.display=stateOK&&(!q||row.dataset.search.includes(q))?"":"none";
+ });
+}
+search.addEventListener("input",apply); state.addEventListener("change",apply);
+document.querySelectorAll(".alert-filter").forEach(card=>{
+ card.addEventListener("click",e=>{e.preventDefault();const f=card.dataset.filter;
+   state.value=f==="resolved"?"resolved":"active";
+   if(f==="high"||f==="warning"){state.value="active";rows.forEach(row=>{row.dataset.severity===f?row.style.display="":"none"})}else apply();
+ });
+});
+document.querySelectorAll(".analyze-alert").forEach(btn=>{
+ btn.addEventListener("click",async()=>{
+  const modal=document.getElementById("aiModal"), out=document.getElementById("aiOutput"); modal.hidden=false; out.textContent="Analyzing alert with configured AI provider...";
+  const res=await fetch(`/alerts/${btn.dataset.id}/ai-analyze`,{method:"POST"}); const data=await res.json();
+  out.textContent=data.ok?data.analysis:(data.error||"AI analysis failed");
+ });
+});
+document.getElementById("closeAI").addEventListener("click",()=>document.getElementById("aiModal").hidden=true);
+document.querySelectorAll(".create-ticket").forEach(btn=>{
+ btn.addEventListener("click",async()=>{
+   btn.disabled=true;
+   const res=await fetch(`/alerts/${btn.dataset.id}/ticket`,{method:"POST"});
+   const data=await res.json();
+   if(data.ok){btn.textContent="Ticket #"+data.ticket_id;btn.classList.add("created")}
+   else{btn.disabled=false;alert(data.error||"Could not create ticket")}
+ });
+});
+document.querySelectorAll(".resolve-btn").forEach(btn=>{
+ btn.addEventListener("click",async()=>{
+   btn.disabled=true;
+   const res=await fetch(`/alerts/${btn.dataset.id}/resolve`,{method:"POST"});
+   if(res.ok) location.reload(); else btn.disabled=false;
+ });
+});
+apply();
+</script></body></html>

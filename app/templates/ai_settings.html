@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI Settings — SOC-enterprise</title><link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"></head>
+<body><header><div class="header-inner"><a class="back" href="{{ url_for('web.dashboard') }}">← Fleet Dashboard</a>
+<div class="eyebrow">PLATFORM / AI INTEGRATION</div><h1>AI Sentinel Settings</h1>
+<p>Choose a local or online model provider for analyst-assisted SOC investigation.</p></div></header>
+<main>
+{% if saved %}<div class="ai-banner success">AI settings saved successfully.</div>{% endif %}
+{% if error %}<div class="ai-banner error">{{ error }}</div>{% endif %}
+<section class="ai-hero card"><div><div class="eyebrow dark">OPTIONAL ANALYST COPILOT</div><h2>Keep AI where it belongs: behind the SOC workflow.</h2><p>AI is never used automatically for endpoint collection. An analyst explicitly requests an alert or incident analysis.</p></div><span class="ai-badge">LOCAL-FIRST</span></section>
+
+<form method="post" action="{{ url_for('web.ai_settings_save') }}">
+<section class="card"><div class="section-title"><div><div class="eyebrow dark">PROVIDER</div><h2>AI Runtime</h2></div></div>
+<div class="provider-grid">
+<label class="provider-card"><input type="radio" name="provider" value="ollama" {% if settings.provider=='ollama' %}checked{% endif %}><b>Ollama</b><span>Local model server · default http://127.0.0.1:11434</span></label>
+<label class="provider-card"><input type="radio" name="provider" value="llama_cpp" {% if settings.provider=='llama_cpp' %}checked{% endif %}><b>llama.cpp</b><span>Local llama.cpp server using OpenAI-compatible API</span></label>
+<label class="provider-card"><input type="radio" name="provider" value="openai_compatible" {% if settings.provider=='openai_compatible' %}checked{% endif %}><b>Online OpenAI-compatible API</b><span>Use OpenAI, OpenRouter, Groq or another compatible endpoint</span></label>
+<label class="provider-card"><input type="radio" name="provider" value="gemini" {% if settings.provider=='gemini' %}checked{% endif %}><b>Google Gemini</b><span>Online Gemini API with API-key authentication</span></label>
+</div></section>
+
+<section class="card"><div class="section-title"><div><div class="eyebrow dark">CONNECTION</div><h2>Model Configuration</h2></div></div>
+<div class="ai-form-grid">
+<label>Base URL<input name="base_url" value="{{ settings.base_url }}" placeholder="http://127.0.0.1:11434"></label>
+<label>Model<div class="inline-field"><input id="aiModel" name="model" value="{{ settings.model }}" placeholder="llama3.2"><button class="ghost" type="button" id="discoverModels">Discover Models</button></div><small id="modelResult" class="muted"></small></label>
+<label>API Key<input type="password" name="api_key" value="{{ settings.api_key }}" placeholder="Leave unchanged to keep existing key"></label>
+<label>Timeout (seconds)<input type="number" name="timeout" min="5" max="300" value="{{ settings.timeout }}"></label>
+</div>
+<div class="ai-options"><label class="check"><input type="checkbox" name="enabled" value="1" {% if settings.enabled %}checked{% endif %}> Enable AI Sentinel</label>
+<label class="check"><input type="checkbox" name="privacy_mode" value="1" {% if settings.privacy_mode %}checked{% endif %}> Privacy mode for online providers — redact common IP/user identifiers before sending evidence</label></div>
+<div class="ai-actions"><button class="primary-btn" type="submit">Save AI Settings</button><button class="ghost" type="button" id="testAI">Test Connection</button><span id="testResult" class="muted"></span></div>
+</section></form>
+
+<section class="card"><div class="eyebrow dark">HOW IT WORKS</div><h2>Provider flow</h2><div class="ai-flow"><span>Alert / Incident</span><b>→</b><span>Analyst Request</span><b>→</b><span>Evidence Context</span><b>→</b><span>Selected AI</span><b>→</b><span>Analysis</span></div><p class="muted">Local providers keep evidence on your infrastructure. Online providers send only when an analyst requests an AI analysis. Privacy mode is recommended for online use.</p></section>
+</main>
+<script>
+document.getElementById('discoverModels').addEventListener('click', async () => {
+ const el=document.getElementById('modelResult'); el.textContent='Discovering models...'; const r=await fetch('{{ url_for('web.ai_models') }}',{method:'POST',body:new FormData(document.querySelector('form'))}); const d=await r.json(); el.textContent=d.ok ? (d.models.length ? d.models.join(', ') : 'No models reported') : ('Failed: '+(d.error||'Unknown error'));
+});
+document.getElementById('testAI').addEventListener('click', async () => {
+ const el=document.getElementById('testResult'); el.textContent='Testing...';
+ const form=document.querySelector('form'); const r=await fetch('{{ url_for('web.ai_test') }}',{method:'POST',body:new FormData(form)}); const d=await r.json();
+ el.textContent=d.ok ? d.message : ('Failed: '+(d.error||'Unknown error')); el.className=d.ok?'ai-test-ok':'ai-test-error';
+});
+</script></body></html>

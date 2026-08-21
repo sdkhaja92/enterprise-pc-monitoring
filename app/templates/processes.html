@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{{ pc.pc_name }} — Processes & Services</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head><body>
+<header><div class="header-inner">
+<a class="back" href="{{ url_for('web.endpoint_detail', pc_name=pc.pc_name) }}">← Endpoint Details</a>
+<div class="eyebrow">ENDPOINT OPERATIONS</div>
+<div class="endpoint-head"><div><h1>{{ pc.pc_name }}</h1><p>{{ pc.ip }} · {{ pc.department }}</p></div></div>
+</div></header>
+<main>
+<section class="stats">
+<article class="card stat"><span>PROCESSES</span><strong>{{ processes|length }}</strong></article>
+<article class="card stat"><span>SERVICES</span><strong>{{ services|length }}</strong></article>
+<article class="card stat"><span>RUNNING SERVICES</span><strong>{{ services|selectattr('state','equalto','Running')|list|length }}</strong></article>
+<article class="card stat"><span>SNAPSHOT</span><strong class="small-value">{% if processes %}{{ processes[0].collected_at }}{% else %}No data{% endif %}</strong></article>
+</section>
+
+<section class="card">
+<div class="section-title compact"><div><div class="eyebrow dark">PROCESS TELEMETRY</div><h2>Top Processes</h2></div></div>
+<div class="table-wrap"><table><thead><tr><th>PID</th><th>PROCESS</th><th>USER</th><th>CPU</th><th>MEMORY</th><th>STATUS</th></tr></thead><tbody>
+{% for p in processes %}
+<tr><td>{{ p.pid }}</td><td><b>{{ p.name }}</b></td><td>{{ p.username or "System" }}</td><td>{{ "%.1f"|format(p.cpu_percent) }}%</td><td>{{ "%.1f"|format(p.memory_mb) }} MB</td><td>{{ p.status }}</td></tr>
+{% else %}<tr><td colspan="6" class="empty">No process telemetry received yet.</td></tr>{% endfor %}
+</tbody></table></div></section>
+
+<section class="card">
+<div class="section-title compact"><div><div class="eyebrow dark">WINDOWS SERVICE INVENTORY</div><h2>Services</h2></div></div>
+<div class="table-wrap"><table><thead><tr><th>SERVICE</th><th>DISPLAY NAME</th><th>STATE</th><th>START MODE</th></tr></thead><tbody>
+{% for s in services %}
+<tr><td><b>{{ s.service_name }}</b></td><td>{{ s.display_name }}</td><td><span class="status-pill {{ 'online' if s.state == 'Running' else 'offline' }}">{{ s.state }}</span></td><td>{{ s.start_mode }}</td></tr>
+{% else %}<tr><td colspan="4" class="empty">No service inventory received yet.</td></tr>{% endfor %}
+</tbody></table></div></section>
+</main></body></html>

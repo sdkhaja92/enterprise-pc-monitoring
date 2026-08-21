@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{{ ioc.indicator }} - IOC</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head><body>
+<header><div class="header-inner">
+<a class="back" href="{{ url_for('web.threat_intelligence') }}"><- Threat Intelligence</a>
+<div class="eyebrow">THREAT INTELLIGENCE / IOC DETAIL</div>
+<div class="endpoint-head"><div><h1>{{ ioc.indicator }}</h1><p>{{ ioc.indicator_type }} · {{ ioc.source }} · {{ ioc.confidence }}% confidence</p></div>
+<span class="incident-severity severity-{{ ioc.severity|lower }}">{{ ioc.severity }}</span></div>
+</div></header>
+<main>
+<section class="card">
+<div class="eyebrow dark">INDICATOR PROFILE</div>
+<h2>{{ ioc.indicator }}</h2>
+<p class="muted">{{ ioc.description or "No description provided." }}</p>
+<p><b>Tags:</b> {{ ioc.tags or "None" }}</p>
+</section>
+<section class="card table-card">
+<div class="section-title"><div><div class="eyebrow dark">CORRELATION</div><h2>Observed Matches</h2></div></div>
+<div class="table-wrap"><table><thead><tr><th>ENDPOINT</th><th>TYPE</th><th>VALUE</th><th>CONTEXT</th><th>MATCHED AT</th></tr></thead><tbody>
+{% for m in matches %}
+<tr><td>{{ m.pc_name }}</td><td>{{ m.source_table }}</td><td>{{ m.matched_value }}</td><td class="event-message">{{ m.context }}</td><td>{{ m.matched_at }}</td></tr>
+{% else %}<tr><td colspan="5" class="empty">No matches observed.</td></tr>{% endfor %}
+</tbody></table></div>
+</section>
+</main></body></html>

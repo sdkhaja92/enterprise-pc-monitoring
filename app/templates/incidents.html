@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Incident Response - Enterprise Monitoring</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head><body>
+<header><div class="header-inner">
+<a class="back" href="{{ url_for('web.dashboard') }}"><- Fleet Dashboard</a>
+<div class="eyebrow">SECURITY OPERATIONS / INCIDENT RESPONSE</div>
+<div class="endpoint-head"><div><h1>Incident Response</h1>
+<p>Central investigation queue for endpoint security signals.</p></div></div>
+</div></header>
+<main>
+<section class="card table-card">
+<div class="section-title">
+<div><div class="eyebrow dark">CASE QUEUE</div><h2>Security Incidents</h2></div>
+<button class="ghost" onclick="location.reload()">Refresh</button>
+</div>
+<div class="table-wrap"><table><thead>
+<tr><th>INCIDENT</th><th>SEVERITY</th><th>STATUS</th><th>ENDPOINT</th><th>RISK</th><th>CATEGORY</th><th>UPDATED</th></tr>
+</thead><tbody>
+{% for i in incidents %}
+<tr>
+<td><a class="endpoint-link" href="{{ url_for('web.incident_detail', incident_id=i.id) }}"><b>{{ i.title }}</b></a><small>#{{ i.id }} · {{ i.incident_key }}</small></td>
+<td><span class="incident-severity severity-{{ i.severity|lower }}">{{ i.severity }}</span></td>
+<td><span class="incident-status status-{{ i.status|lower }}">{{ i.status }}</span></td>
+<td>{{ i.pc_name or "-" }}</td>
+<td><span class="risk-score risk-{{ i.risk_level|lower }}">{{ i.risk_score }}</span></td>
+<td>{{ i.category }}</td>
+<td>{{ i.updated_at }}</td>
+</tr>
+{% else %}
+<tr><td colspan="7" class="empty">No incidents have been generated yet.</td></tr>
+{% endfor %}
+</tbody></table></div>
+</section>
+</main></body></html>

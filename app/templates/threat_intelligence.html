@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Threat Intelligence - Enterprise Monitoring</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head><body>
+<header><div class="header-inner">
+<a class="back" href="{{ url_for('web.dashboard') }}"><- Fleet Dashboard</a>
+<div class="eyebrow">SECURITY OPERATIONS / THREAT INTELLIGENCE</div>
+<div class="endpoint-head"><div><h1>Threat Intelligence</h1>
+<p>IOC management and correlation against endpoint telemetry stored in the platform.</p></div></div>
+</div></header>
+<main>
+
+<section class="stats">
+<article class="card stat"><span>IOCs</span><strong>{{ summary.total }}</strong><small>Configured indicators</small></article>
+<article class="card stat"><span>IOC MATCHES</span><strong class="metric-warn-text">{{ summary.matches }}</strong><small>Observed correlations</small></article>
+<article class="card stat"><span>HIGH / CRITICAL</span><strong>{{ summary.high }}</strong><small>Higher-priority indicators</small></article>
+<article class="card stat"><span>AFFECTED ENDPOINTS</span><strong>{{ summary.endpoints }}</strong><small>Endpoints with matches</small></article>
+</section>
+
+<section class="card">
+<div class="section-title"><div><div class="eyebrow dark">IOC MANAGEMENT</div><h2>Add Indicator</h2></div></div>
+<form method="post" action="{{ url_for('web.add_ioc') }}" class="ioc-form">
+<select name="indicator_type" class="filter-select">
+<option value="ip">IP Address</option><option value="domain">Domain</option><option value="hash">File Hash</option>
+</select>
+<input name="indicator" class="search-box" placeholder="Indicator value" required>
+<select name="severity" class="filter-select">
+<option>Medium</option><option>Low</option><option>High</option><option>Critical</option>
+</select>
+<input name="confidence" type="number" min="0" max="100" value="80" class="confidence-box" title="Confidence">
+<input name="source" class="search-box" value="Manual" placeholder="Source">
+<input name="tags" class="search-box" placeholder="Tags">
+<input name="description" class="search-box" placeholder="Description">
+<button class="primary-btn" type="submit">Add / Update IOC</button>
+</form>
+<p class="muted">Supported indicator types: IP, domain and hash. Current automatic matching focuses on exact IP correlation with observed network/security telemetry.</p>
+</section>
+
+<section class="card table-card">
+<div class="section-title"><div><div class="eyebrow dark">INDICATOR DATABASE</div><h2>Configured IOCs</h2></div></div>
+<div class="table-wrap"><table><thead>
+<tr><th>TYPE</th><th>INDICATOR</th><th>SEVERITY</th><th>CONFIDENCE</th><th>SOURCE</th><th>MATCHES</th><th>ACTION</th></tr>
+</thead><tbody>
+{% for i in iocs %}
+<tr>
+<td><span class="ioc-type">{{ i.indicator_type }}</span></td>
+<td><a class="endpoint-link" href="{{ url_for('web.ioc_detail', ioc_id=i.id) }}"><b>{{ i.indicator }}</b></a><small>{{ i.tags or "" }}</small></td>
+<td><span class="incident-severity severity-{{ i.severity|lower }}">{{ i.severity }}</span></td>
+<td>{{ i.confidence }}%</td><td>{{ i.source }}</td><td><b>{{ i.match_count }}</b></td>
+<td><form method="post" action="{{ url_for('web.delete_ioc', ioc_id=i.id) }}" onsubmit="return confirm('Delete this IOC?')"><button class="danger-btn">Delete</button></form></td>
+</tr>
+{% else %}<tr><td colspan="7" class="empty">No IOCs configured.</td></tr>{% endfor %}
+</tbody></table></div>
+</section>
+
+<section class="card table-card">
+<div class="section-title"><div><div class="eyebrow dark">CORRELATION RESULTS</div><h2>Recent IOC Matches</h2></div></div>
+<div class="table-wrap"><table><thead>
+<tr><th>IOC</th><th>ENDPOINT</th><th>TYPE</th><th>MATCHED VALUE</th><th>CONTEXT</th><th>TIME</th></tr>
+</thead><tbody>
+{% for m in matches %}
+<tr>
+<td><span class="incident-severity severity-{{ m.severity|lower }}">{{ m.indicator }}</span></td>
+<td>{{ m.pc_name }}</td><td>{{ m.source_table }}</td><td>{{ m.matched_value }}</td>
+<td class="event-message">{{ m.context }}</td><td>{{ m.matched_at }}</td>
+</tr>
+{% else %}<tr><td colspan="6" class="empty">No IOC matches observed.</td></tr>{% endfor %}
+</tbody></table></div>
+</section>
+
+</main></body></html>

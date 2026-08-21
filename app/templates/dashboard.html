@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Enterprise PC Monitoring</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<header>
+  <div class="header-inner">
+    <div>
+      <div class="eyebrow">IT OPERATIONS / ENDPOINT MANAGEMENT</div>
+      <h1>Enterprise PC Monitoring</h1>
+      <p>Endpoint health, performance telemetry, alerts and help-desk visibility</p>
+    </div>
+  </div>
+<div class="user-bar"><span>{{ user.username if user else "Administrator" }} · {{ user.role if user else "Admin" }}</span><form method="post" action="{{ url_for('auth.logout') }}"><button>Sign out</button></form></div></header>
+
+<main>
+  <section class="module-nav card">
+    <div class="module-nav-title"><div class="eyebrow dark">SECURITY OPERATIONS</div><h2>Platform Modules</h2></div>
+    <nav class="module-nav-links">
+      <a href="{{ url_for('web.dashboard') }}" class="active">Fleet Dashboard</a>
+      <a href="{{ url_for('web.alert_center') }}">Alerts</a>
+      <a href="{{ url_for('web.security_center') }}">Security Events</a>
+      <a href="{{ url_for('web.risk_center') }}">Risk Center</a>
+      <a href="{{ url_for('web.incident_center') }}">Incidents</a>
+      <a href="{{ url_for('web.threat_intelligence') }}">Threat Intelligence</a>
+      <a href="{{ url_for('web.detection_center') }}">Detections</a>
+      <a href="{{ url_for('web.soc_center') }}">SOC Command Center</a>
+      <a href="{{ url_for('web.ticket_center') }}">Help Desk</a>
+      {% if user and user.role == 'Admin' %}<a href="{{ url_for('web.ai_settings') }}">AI Settings</a>{% endif %}
+    </nav>
+  </section>
+
+  <section class="stats">
+    <article class="card stat"><span>Registered PCs</span><strong>{{ stats.pcs }}</strong></article>
+    <article class="card stat"><span>Online / Recent</span><strong>{{ stats.online }}</strong></article>
+    <a class="card stat stat-link" href="{{ url_for('web.alert_center') }}"><span>Active Alerts</span><strong>{{ stats.alerts }}</strong><small>Open Alert Center →</small></a>
+    <article class="card stat"><span>Open Tickets</span><strong>{{ stats.tickets }}</strong></article>
+<a class="card stat stat-link" href="{{ url_for("web.security_center") }}"><span>Security Monitoring</span><strong>-></strong><small>Open Security Center</small></a>
+<a class="card stat stat-link" href="{{ url_for("web.risk_center") }}"><span>Endpoint Risk</span><strong>-></strong><small>Risk & Threat Overview</small></a>
+<a class="card stat stat-link" href="{{ url_for("web.incident_center") }}"><span>Incident Response</span><strong>-></strong><small>Investigate Security Incidents</small></a>
+<a class="card stat stat-link" href="{{ url_for("web.soc_center") }}"><span>SOC Command Center</span><strong>-></strong><small>Live Security Operations View</small></a>
+<a class="card stat stat-link" href="{{ url_for("web.threat_intelligence") }}"><span>Threat Intelligence</span><strong>-></strong><small>IOC Management & Correlation</small></a>
+<a class="card stat stat-link" href="{{ url_for("web.detection_center") }}"><span>Detection Center</span><strong>-></strong><small>Rule-based Detection & Correlation</small></a>
+  </section>
+
+  <section class="card table-card">
+    <div class="section-title">
+      <div>
+        <div class="eyebrow dark">FLEET</div>
+        <h2>Endpoint Inventory</h2>
+      </div>
+      <button class="ghost" onclick="location.reload()">Refresh</button>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Endpoint</th><th>IP</th><th>Department</th><th>CPU</th>
+            <th>RAM</th><th>Disk</th><th>Last Seen</th><th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for p in pcs %}
+          <tr>
+            <td><a class="endpoint-link" href="{{ url_for('web.endpoint_detail', pc_name=p.pc_name) }}">{{ p.pc_name }}</a></td>
+            <td>{{ p.ip }}</td>
+            <td>{{ p.department }}</td>
+            <td>{{ p.cpu }}%</td>
+            <td>{{ p.ram }}%</td>
+            <td class="{{ 'metric-warn' if p.disk >= 80 else '' }}">{{ p.disk }}%</td>
+            <td>{{ p.last_seen or "-" }}</td>
+            <td><span class="status {{ 'online' if p.status == 'Online' else 'offline' }}">{{ p.status }}</span></td>
+          </tr>
+        {% else %}
+          <tr><td colspan="8" class="empty">No endpoints registered yet.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card alert-preview">
+    <div class="section-title">
+      <div><div class="eyebrow dark">ATTENTION REQUIRED</div><h2>Active Alerts</h2></div>
+      <a class="ghost-link" href="{{ url_for('web.alert_center') }}">View all</a>
+    </div>
+    {% if stats.alerts %}
+      <div class="alert-preview-list">
+        {% for a in active_alerts %}
+        <div class="alert-preview-row">
+          <div><span class="severity {{ a.severity|lower }}">{{ a.severity }}</span><div><b>{{ a.pc_name }}</b><span>{{ a.message }}</span></div></div>
+          <small>{{ a.created_at }}</small>
+        </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty">No active alerts. Fleet health is within configured thresholds.</div>
+    {% endif %}
+  </section>
+
+</main>
+</body>
+</html>

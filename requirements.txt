@@ -1,0 +1,6 @@
+Flask>=3.0,<4
+requests>=2.31,<3
+psutil>=5.9,<7
+python-dotenv>=1.0,<2
+pytest>=8,<9
+cryptography>=42,<47

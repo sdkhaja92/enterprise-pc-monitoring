@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="refresh" content="30">
+<title>SOC Command Center - Enterprise Monitoring</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head><body>
+<header><div class="header-inner">
+<a class="back" href="{{ url_for('web.dashboard') }}"><- Fleet Dashboard</a>
+<div class="eyebrow">SECURITY OPERATIONS / SOC COMMAND CENTER</div>
+<div class="endpoint-head"><div><h1>SOC Command Center</h1>
+<p>Operational security view across endpoints, incidents, risk, alerts and IOC activity.</p></div>
+<span class="security-badge">LIVE OPERATIONS</span></div>
+</div></header>
+<main>
+
+<section class="soc-kpis">
+<article class="card soc-kpi"><span>ENDPOINTS</span><strong>{{ metrics.total }}</strong><small>{{ metrics.online }} currently online</small></article>
+<article class="card soc-kpi"><span>OPEN INCIDENTS</span><strong>{{ metrics.incidents }}</strong><small>{{ metrics.critical_incidents }} critical</small></article>
+<article class="card soc-kpi"><span>HIGH-RISK ENDPOINTS</span><strong>{{ metrics.high_risk }}</strong><small>High / Critical risk</small></article>
+<article class="card soc-kpi"><span>IOC MATCHES / 24H</span><strong>{{ metrics.ioc_matches }}</strong><small>Threat intelligence correlations</small></article>
+<article class="card soc-kpi"><span>FAILED LOGONS / 24H</span><strong>{{ metrics.failed_24h }}</strong><small>Windows Event ID 4625</small></article>
+</section>
+
+<section class="soc-layout">
+<div class="card table-card">
+<div class="section-title"><div><div class="eyebrow dark">ACTIVE RESPONSE</div><h2>Open Incidents</h2></div>
+<a class="ghost-link" href="{{ url_for('web.incident_center') }}">View all -></a></div>
+<div class="soc-alert-list">
+{% for a in alerts %}
+<a class="soc-alert alert-{{ a.severity|lower }}" href="{{ url_for('web.incident_center') }}">
+<div><span class="incident-severity severity-{{ a.severity|lower }}">{{ a.severity }}</span><b>{{ a.pc_name }}</b></div>
+<strong>{{ a.message }}</strong><small>{{ a.created_at }}</small>
+</a>
+{% else %}<div class="empty">No unresolved alerts.</div>{% endfor %}
+</div>
+</div>
+
+<div class="card">
+<div class="section-title"><div><div class="eyebrow dark">ENDPOINT EXPOSURE</div><h2>Top Risk</h2></div>
+<a class="ghost-link" href="{{ url_for('web.risk_center') }}">Risk Center -></a></div>
+<div class="risk-list">
+{% for r in top_risk %}
+<a class="risk-row" href="{{ url_for('web.endpoint_risk', pc_name=r.pc_name) }}">
+<div><b>{{ r.pc_name }}</b><small>{{ r.ip }} · Defender: {{ r.defender_status }}</small></div>
+<span class="risk-score risk-{{ r.level|lower }}">{{ r.score }}</span>
+</a>
+{% else %}<div class="empty">No endpoints yet.</div>{% endfor %}
+</div>
+</div>
+</section>
+
+<section class="card table-card">
+<div class="section-title"><div><div class="eyebrow dark">SECURITY ACTIVITY</div><h2>Operational Activity Stream</h2></div>
+<span class="muted">Refreshes every 30 seconds</span></div>
+<div class="activity-stream">
+{% for a in activity %}
+<div class="activity-row">
+<div class="activity-severity activity-{{ a.severity|lower }}"></div>
+<div class="activity-body"><div><b>{{ a.title }}</b><span>{{ a.pc_name }}</span></div>
+<p>{{ a.detail }}</p><small>{{ a.created_at }}</small></div>
+</div>
+{% else %}<div class="empty">No SOC activity collected yet.</div>{% endfor %}
+</div>
+</section>
+
+<section class="soc-nav-grid">
+<a class="card soc-nav" href="{{ url_for('web.detection_center') }}"><span>Detection Center</span><b>Rules & Correlation -></b></a>
+<a class="card soc-nav" href="{{ url_for('web.security_center') }}"><span>Security Events</span><b>Windows Event Monitoring -></b></a>
+<a class="card soc-nav" href="{{ url_for('web.risk_center') }}"><span>Endpoint Risk</span><b>Risk & Exposure -></b></a>
+<a class="card soc-nav" href="{{ url_for('web.incident_center') }}"><span>Incident Response</span><b>Investigation Queue -></b></a>
+<a class="card soc-nav" href="{{ url_for('web.threat_intelligence') }}"><span>Threat Intelligence</span><b>IOC Correlation -></b></a>
+{% if user and user.role == "Admin" %}<a class="card soc-nav ai-nav" href="{{ url_for('web.ai_settings') }}"><span>AI Sentinel</span><b>Local / Online AI Settings -></b></a>{% endif %}
+</section>
+
+</main></body></html>

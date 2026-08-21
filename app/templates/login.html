@@ -1,0 +1,12 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sign in — Enterprise Monitoring</title><link rel="stylesheet" href="{{ url_for('static',filename='css/style.css') }}"></head>
+<body class="login-body"><div class="login-shell">
+<div class="login-brand"><div class="brand-mark">EM</div><div><b>Enterprise Monitoring</b><span>IT Operations Platform</span></div></div>
+<section class="card login-card"><div class="eyebrow dark">SECURE ACCESS</div><h1>Sign in</h1><p>Access endpoint monitoring, alerts and service operations.</p>
+{% if error %}<div class="login-error">{{ error }}</div>{% endif %}
+<form method="post"><label>Username<input name="username" autocomplete="username" required></label>
+<label>Password<input name="password" type="password" autocomplete="current-password" required></label>
+<button class="login-btn">Sign in</button></form>
+<div class="login-note">Initial administrator: <b>admin</b> · Password: <b>Admin@12345</b><br>Change this password before using the system beyond local testing.</div>
+</section></div></body></html>

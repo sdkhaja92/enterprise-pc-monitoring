@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Security Center - Enterprise Monitoring</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head><body><header><div class="header-inner">
+<a class="back" href="{{ url_for('web.dashboard') }}"><- Fleet Dashboard</a>
+<div class="eyebrow">SECURITY OPERATIONS / WINDOWS EVENT MONITORING</div>
+<div class="endpoint-head"><div><h1>Security Center</h1>
+<p>Authentication telemetry, privileged activity and Windows security events.</p></div>
+<span class="security-badge">Monitoring</span></div></div></header><main>
+<section class="stats">
+<article class="card stat"><span>SECURITY EVENTS</span><strong>{{ summary.total }}</strong><small>Collected events</small></article>
+<article class="card stat"><span>FAILED LOGONS</span><strong class="metric-warn-text">{{ summary.failed_logons }}</strong><small>Event ID 4625</small></article>
+<article class="card stat"><span>PRIVILEGED ACTIVITY</span><strong>{{ summary.privileged }}</strong><small>Event ID 4672</small></article>
+<article class="card stat"><span>SERVICE INSTALLS</span><strong>{{ summary.service_installs }}</strong><small>Event ID 7045</small></article>
+</section>
+<section class="card"><div class="section-title"><div><div class="eyebrow dark">DETECTION OVERVIEW</div><h2>Windows Security Signals</h2></div><button class="ghost" onclick="location.reload()">Refresh</button></div>
+<div class="security-grid">
+<div class="signal-card"><div class="signal-icon">4625</div><div><b>Failed Authentication</b><span>Repeated failed Windows logons can indicate password guessing or an account under attack.</span></div></div>
+<div class="signal-card"><div class="signal-icon">4672</div><div><b>Special Privileges</b><span>Tracks logons where Windows assigned sensitive administrative privileges.</span></div></div>
+<div class="signal-card"><div class="signal-icon">4688</div><div><b>Process Creation</b><span>Useful when Windows process auditing is enabled.</span></div></div>
+<div class="signal-card"><div class="signal-icon">7045</div><div><b>Service Installation</b><span>New Windows service installations are surfaced as security telemetry.</span></div></div>
+</div></section>
+<section class="card table-card"><div class="section-title"><div><div class="eyebrow dark">EVENT STREAM</div><h2>Recent Windows Events</h2></div>
+<div class="alert-tools"><input id="eventSearch" class="search-box" placeholder="Search endpoint, account, IP or message...">
+<select id="eventFilter" class="filter-select"><option value="all">All Events</option><option value="4625">Failed Logons</option><option value="4672">Privileged Activity</option><option value="4688">Process Creation</option><option value="7045">Service Install</option></select></div></div>
+<div class="table-wrap"><table id="securityTable"><thead><tr><th>EVENT</th><th>ENDPOINT</th><th>ACCOUNT</th><th>SOURCE IP</th><th>PROVIDER</th><th>TIME</th><th>MESSAGE</th></tr></thead><tbody>
+{% for e in events %}
+<tr data-event="{{ e.event_id }}" data-search="{{ (e.pc_name ~ " " ~ e.account_name ~ " " ~ e.source_ip ~ " " ~ e.provider ~ " " ~ e.message)|lower }}">
+<td><span class="event-id event-{{ e.event_id }}">{{ e.event_id }}</span><small>{{ e.level or "Information" }}</small></td>
+<td><a class="endpoint-link" href="{{ url_for("web.endpoint_detail", pc_name=e.pc_name) }}">{{ e.pc_name }}</a></td>
+<td>{{ e.account_name or "-" }}</td><td>{{ e.source_ip or "-" }}</td><td>{{ e.provider or "-" }}</td><td>{{ e.event_time }}</td>
+<td class="event-message" title="{{ e.message }}">{{ e.message or "-" }}</td></tr>
+{% else %}<tr><td colspan="7" class="empty">No Windows security events have been collected yet.</td></tr>{% endfor %}
+</tbody></table></div></section>
+<section class="card table-card"><div class="section-title"><div><div class="eyebrow dark">AUTHENTICATION WATCH</div><h2>Recent Failed Logons</h2><p class="muted">Event ID 4625 from Windows Security logs.</p></div></div>
+<div class="table-wrap"><table><thead><tr><th>ENDPOINT</th><th>ACCOUNT</th><th>SOURCE IP</th><th>TIME</th><th>DETAIL</th></tr></thead><tbody>
+{% for e in recent_failed %}<tr><td><a class="endpoint-link" href="{{ url_for("web.endpoint_detail", pc_name=e.pc_name) }}">{{ e.pc_name }}</a></td><td><b>{{ e.account_name or "Unknown" }}</b></td><td>{{ e.source_ip or "Local / unavailable" }}</td><td>{{ e.event_time }}</td><td class="event-message">{{ e.message }}</td></tr>
+{% else %}<tr><td colspan="5" class="empty">No failed logon events collected.</td></tr>{% endfor %}
+</tbody></table></div></section></main>
+<script>
+const rows=[...document.querySelectorAll("#securityTable tbody tr[data-search]")],search=document.getElementById("eventSearch"),filter=document.getElementById("eventFilter");
+function applyFilters(){const q=search.value.toLowerCase().trim(),f=filter.value;rows.forEach(row=>{const a=f==="all"||row.dataset.event===f,b=!q||row.dataset.search.includes(q);row.style.display=a&&b?"":"none";});}
+search.addEventListener("input",applyFilters);filter.addEventListener("change",applyFilters);applyFilters();
+</script></body></html>

@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Help Desk — Enterprise Monitoring</title>
+<link rel="stylesheet" href="{{ url_for('static',filename='css/style.css') }}"></head>
+<body>
+<header><div class="header-inner"><a class="back" href="{{ url_for('web.dashboard') }}">← Fleet Dashboard</a>
+<div class="eyebrow">IT OPERATIONS / SERVICE DESK</div><h1>Help Desk</h1><p>Track endpoint incidents from alert to resolution.</p></div></header>
+<main>
+<section class="stats ticket-stats">
+<div class="card stat"><span>Open</span><strong>{{ summary.open }}</strong></div>
+<div class="card stat"><span>In Progress</span><strong>{{ summary.progress }}</strong></div>
+<div class="card stat"><span>Resolved</span><strong>{{ summary.resolved }}</strong></div>
+<div class="card stat"><span>Total Tickets</span><strong>{{ summary.total }}</strong></div>
+</section>
+<section class="card table-card">
+<div class="section-title"><div><div class="eyebrow dark">SERVICE DESK</div><h2>Tickets</h2></div>
+<div class="alert-tools"><input id="search" class="search-box" placeholder="Search ticket, endpoint or issue...">
+<select id="filter" class="filter-select"><option value="all">All</option><option>Open</option><option>In Progress</option><option>Resolved</option></select></div></div>
+<div class="table-wrap"><table id="ticketTable"><thead><tr><th>Ticket</th><th>Endpoint</th><th>Issue</th><th>Priority</th><th>Assignee</th><th>Status</th><th>Created</th></tr></thead><tbody>
+{% for t in tickets %}<tr data-status="{{ t.status }}" data-search="{{ (t.id|string ~ ' ' ~ t.pc_name ~ ' ' ~ t.title ~ ' ' ~ t.description ~ ' ' ~ t.assignee)|lower }}">
+<td><strong>#{{ t.id }}</strong></td><td><a class="endpoint-link" href="{{ url_for('web.endpoint_detail',pc_name=t.pc_name) }}">{{ t.pc_name }}</a></td>
+<td><strong>{{ t.title }}</strong><span class="ticket-desc">{{ t.description }}</span></td>
+<td><span class="priority {{ t.priority|lower }}">{{ t.priority }}</span></td><td>{{ t.assignee }}</td>
+<td><select class="ticket-status" data-id="{{ t.id }}"><option {% if t.status=="Open" %}selected{% endif %}>Open</option><option {% if t.status=="In Progress" %}selected{% endif %}>In Progress</option><option {% if t.status=="Resolved" %}selected{% endif %}>Resolved</option></select></td>
+<td>{{ t.created_at }}</td></tr>{% else %}<tr><td colspan="7" class="empty">No tickets yet. Create one from an active alert.</td></tr>{% endfor %}
+</tbody></table></div></section>
+</main>
+<script>
+const rows=[...document.querySelectorAll("#ticketTable tbody tr[data-search]")],search=document.getElementById("search"),filter=document.getElementById("filter");
+function apply(){const q=search.value.toLowerCase().trim(),f=filter.value;rows.forEach(r=>r.style.display=(f==="all"||r.dataset.status===f)&&(!q||r.dataset.search.includes(q))?"":"none")}
+search.addEventListener("input",apply);filter.addEventListener("change",apply);
+document.querySelectorAll(".ticket-status").forEach(s=>s.addEventListener("change",async()=>{const fd=new FormData();fd.append("status",s.value);const r=await fetch(`/tickets/${s.dataset.id}/status`,{method:"POST",body:fd});if(!r.ok)location.reload();else{s.closest("tr").dataset.status=s.value;apply()}}));
+apply();
+</script></body></html>
